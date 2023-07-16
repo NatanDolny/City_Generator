@@ -318,8 +318,7 @@ public class ProceduralScript : MonoBehaviour
         int greaterVector = maxX < maxY ? maxX : maxY;
         int maxDirectionCounter = (int)Mathf.Sqrt(maxX * maxY) + (maxX < maxY? maxX : maxY) / 2 -  Mathf.Abs(dif / greaterVector);
         int directionCounter = maxDirectionCounter;
-        bool goVertical = greaterVector == maxY ? true : false; 
-
+        bool goVertical = greaterVector == maxY ? true : false;
         while (toDeleteCount > 0 && identifiers.Count > 0 )
         {
             y = identifiers[0].yID;
@@ -555,6 +554,7 @@ public class ProceduralScript : MonoBehaviour
                 Vector3 original = landPlots[i].transform.position;
                 Vector3 temp = original;
                 Vector3 lookAt = landPlots[i].transform.position;
+                List<Vector3> lookAts = new List<Vector3>();
                 Vector3 rot = Vector3.zero;
                 Ray ray;
                 RaycastHit hit;
@@ -570,6 +570,7 @@ public class ProceduralScript : MonoBehaviour
                     if (hit.collider.CompareTag("Road"))
                     {
                         lookAt = hit.point;
+                        lookAts.Add(hit.point);
                         foundRoad = true; 
                     }
                     else if (hit.collider.CompareTag("Land"))
@@ -586,6 +587,7 @@ public class ProceduralScript : MonoBehaviour
                     if (hit.collider.CompareTag("Road"))
                     {
                         lookAt = hit.point;
+                        lookAts.Add(hit.point);
                         foundRoad = true;
                     }
                     else if (hit.collider.CompareTag("Land"))
@@ -602,6 +604,7 @@ public class ProceduralScript : MonoBehaviour
                     if (hit.collider.CompareTag("Road"))
                     {
                         lookAt = hit.point;
+                        lookAts.Add(hit.point);
                         foundRoad = true;
                     }
                     else if (hit.collider.CompareTag("Land"))
@@ -618,6 +621,7 @@ public class ProceduralScript : MonoBehaviour
                     if (hit.collider.CompareTag("Road"))
                     {
                         lookAt = hit.point;
+                        lookAts.Add(hit.point);
                         foundRoad = true;
                     }
                     else if (hit.collider.CompareTag("Land"))
@@ -631,6 +635,7 @@ public class ProceduralScript : MonoBehaviour
 
                 if (foundRoad)
                 {
+                    lookAt = lookAts[Random.Range(0, lookAts.Count() - 1)];
                     if (Random.value >= smallToBigRatio)
                     {
                         landPlots[i].GetComponent<Plot>().CreateBuilding(Building1x1, lookAt, rot, false);
@@ -644,25 +649,24 @@ public class ProceduralScript : MonoBehaviour
                 for (int c = 0; c < landPlots[i].transform.childCount; c++)
                 {
                     bool stay = false;
+                    List<int> rotations = new List<int>();
                     for (int r = 0; r < 4; r++)
                     {
-                        if (!stay)
-                        {
-                            landPlots[i].transform.GetChild(c).transform.rotation = Quaternion.Euler(new Vector3(0, 90 * r, 0));
-                            Vector3 origin = new Vector3(
-                                landPlots[i].transform.GetChild(c).transform.position.x,
-                                landPlots[i].transform.GetChild(c).transform.position.y + 50,
-                                landPlots[i].transform.GetChild(c).transform.position.z);
-                            origin = origin + landPlots[i].transform.GetChild(c).transform.forward * width;
+                        landPlots[i].transform.GetChild(c).transform.rotation = Quaternion.Euler(new Vector3(0, 90 * r, 0));
+                        Vector3 origin = new Vector3(
+                            landPlots[i].transform.GetChild(c).transform.position.x,
+                            landPlots[i].transform.GetChild(c).transform.position.y + 50,
+                            landPlots[i].transform.GetChild(c).transform.position.z);
+                        origin = origin + landPlots[i].transform.GetChild(c).transform.forward * width;
 
-                            Ray _ray = new Ray(origin, Vector3.down);
-                            RaycastHit _hit;
-                            if (Physics.Raycast(_ray, out _hit, 60))
+                        Ray _ray = new Ray(origin, Vector3.down);
+                        RaycastHit _hit;
+                        if (Physics.Raycast(_ray, out _hit, 60))
+                        {
+                            if (_hit.collider.CompareTag("Road"))
                             {
-                                if (_hit.collider.CompareTag("Road"))
-                                {
-                                    stay = true;
-                                }
+                                rotations.Add(r);
+                                stay = true;
                             }
                         }
                     }
@@ -671,16 +675,9 @@ public class ProceduralScript : MonoBehaviour
                         landPlots[i].GetComponent<Plot>().buildings.Remove(landPlots[i].transform.GetChild(c).gameObject);
                         Destroy(landPlots[i].transform.GetChild(c).gameObject);
                     }
-                }
-
-                if (!foundRoad)
-                {
-                    for (int c = 0; c < landPlots[i].transform.childCount; c++)
+                    else
                     {
-                        if (landPlots[i].transform.GetChild(c).name == "Building")
-                        {
-                            //Destroy(landPlots[i].transform.GetChild(c).gameObject);
-                        }
+                        landPlots[i].transform.GetChild(c).transform.rotation = Quaternion.Euler(new Vector3(0, 90 * rotations[Random.Range(0, rotations.Count())], 0));
                     }
                 }
             }
@@ -720,24 +717,9 @@ public class ProceduralScript : MonoBehaviour
                 minutes.Add(new GameObject());
 
                 minutes[y * (cityWidth - 1) + x].name = "Minute";
-                //Debug.DrawRay(new Vector3(pos.x, pos.y + 5, pos.z), Vector3.down * 10, Color.yellow, 1000);
 
-                // FOR SOME REASON THIS RAYCAST WILL NEVER DETECT THE PLOT'S PLANE,
-                // IT MEANS I HAVE TO CHECK TWICE TO DELETE OBJECTS I PLACED BEFORE IF THEY ARE IN ROAD
-
-                if (Physics.Raycast(ray, out hit, 10))
+                if (!Physics.Raycast(ray, out hit, 10))
                 {
-                    //Debug.Log("collider name " + hit.collider.name);
-                    if (hit.collider.CompareTag("Road"))
-                    {
-                        //roadChecks.Add(new RoadCheck());
-                        //roadChecks.Last().index = y * (cityWidth - 1) + x;
-                        //Debug.Log(minutes[y * (cityWidth - 1) + x] + " hit road");
-                    }
-                }
-                else //if (!Physics.Raycast(ray, out hit, 10) && !isRoad) 
-                {
-                    //Debug.Log("NOT HIT");
                     GameObject temp;
                     if (Random.value >= smallToBigRatio)
                     {
