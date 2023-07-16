@@ -93,7 +93,5 @@ public class Plot : MonoBehaviour
         {
             buildings.Last().transform.LookAt(pos);
         }
-        Debug.Log("building " + buildings.Last().name + " time " + Time.time);
-        //sbuilding.GetComponent<BuildingCustomisation>().SetUp();
     }
 }
