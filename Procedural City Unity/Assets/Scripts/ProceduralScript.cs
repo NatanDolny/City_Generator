@@ -288,10 +288,9 @@ public class ProceduralScript : MonoBehaviour
             tempScript.SetRoad();
         }
 
-        int toDeleteCount = (int)(roadObjects.Length * percentageOfRoad);
+        int toDeleteCount = (int)(roadObjects.Length * (1 - percentageOfRoad));
         int consecutiveFails = 0;
 
-        // create road Dlist:
 
         int y = 0;
         int x = 0;
@@ -307,61 +306,45 @@ public class ProceduralScript : MonoBehaviour
             for (int _x = 0; _x < xLength; _x++)
             {
                 identifiers.Add(new Identifiers());
-                Debug.Log(identifiers.Count + " ids for loop " + ((xLength * _y) + _x) + "    _y: " + _y + "    _x " + _x + " maxX " + maxX + "   maxY " + maxY);
                 
-                //identifiers[xLength * _y + _x].yID = _y;
-                //identifiers[xLength * _y + _x].xID = _x;
                 identifiers[identifiers.Count - 1].yID = _y;
                 identifiers[identifiers.Count - 1].xID = _x;
             }
         }
 
-        // shuffle ID list
-
         Shuffle(identifiers);
+        int calc = 0;
+        int dif = Mathf.Abs(maxY - maxX);
+        int greaterVector = maxX < maxY ? maxX : maxY;
+        int maxDirectionCounter = (int)Mathf.Sqrt(maxX * maxY) + (maxX < maxY? maxX : maxY) / 2 -  Mathf.Abs(dif / greaterVector);
+        int directionCounter = maxDirectionCounter;
+        bool goVertical = greaterVector == maxY ? true : false; 
 
-        /*
-         public static void Shuffle<T>(Random random, T[,] array)
+        while (toDeleteCount > 0 && identifiers.Count > 0 )
         {
-            int lengthRow = array.GetLength(1);
+            y = identifiers[0].yID;
+            x = identifiers[0].xID;
+            identifiers.RemoveAt(0);
 
-            for (int i = array.Length - 1; i > 0; i--)
-            {
-                int i0 = i / lengthRow;
-                int i1 = i % lengthRow;
-
-                int j = random.Next(i + 1);
-                int j0 = j / lengthRow;
-                int j1 = j % lengthRow;
-
-                T temp = array[i0, i1];
-                array[i0, i1] = array[j0, j1];
-                array[j0, j1] = temp;
-            }
-        }
-        */
-
-        //change to while loop \|/
-
-        bool finished = false; 
-
-        //for (int i = 0; i < roadObjects.Length * (1f - percentageOfRoad); i++)
-        while (toDeleteCount > 0 && consecutiveFails < 20 && !finished)
-        {
-            y = Random.Range(0, maxY);
-            x = Random.Range(0, maxX);
             bool resetted = false;
 
-            Debug.Log("road object y: " + y + "   max Y " + maxY + "            X " + x + "    MaxX " + maxX);
             if (roadObjects[y, x].GetComponent<Road>().roadType != Road.RoadType.VOID)
             {
-                if (x > 0 && roadObjects[y, x - 1].GetComponent<Road>().connections.Count > 2)
+                if (x > 0 && (roadObjects[y, x - 1].GetComponent<Road>().connections.Count > 2 ||
+                    (roadObjects[y, x - 1].GetComponent<Road>().roadType == Road.RoadType.VOID &&
+                    !goVertical)))
                 {
-                    if (x + 1 < cityWidth - 1 && roadObjects[y, x + 1].GetComponent<Road>().connections.Count > 2)
+                    if (x + 1 < cityWidth - 1 && (roadObjects[y, x + 1].GetComponent<Road>().connections.Count > 2 ||
+                        (roadObjects[y, x + 1].GetComponent<Road>().roadType == Road.RoadType.VOID &&
+                        !goVertical)))
                     {
-                        if (y > 0 && roadObjects[y - 1, x].GetComponent<Road>().connections.Count > 2)
+                        if (y > 0 && (roadObjects[y - 1, x].GetComponent<Road>().connections.Count > 2 ||
+                            (roadObjects[y - 1, x].GetComponent<Road>().roadType == Road.RoadType.VOID &&
+                            goVertical)))
                         {
-                            if (y + 1 < cityLength - 1 && roadObjects[y + 1, x].GetComponent<Road>().connections.Count > 2)
+                            if (y + 1 < cityLength - 1 && (roadObjects[y + 1, x].GetComponent<Road>().connections.Count > 2 ||
+                                (roadObjects[y + 1, x].GetComponent<Road>().roadType == Road.RoadType.VOID &&
+                                goVertical)))
                             {
                                 roadObjects[y, x - 1].GetComponent<Road>().connections.Remove(Plot.Direction.EAST);
                                 roadObjects[y - 1, x].GetComponent<Road>().connections.Remove(Plot.Direction.NORTH);
@@ -378,13 +361,19 @@ public class ProceduralScript : MonoBehaviour
                 {
                     if (x > 0 && x < maxX - 1)
                     {
-                        if (roadObjects[y, x - 1].GetComponent<Road>().connections.Count > 2)
+                        if (roadObjects[y, x - 1].GetComponent<Road>().connections.Count > 2 || 
+                            (roadObjects[y, x - 1].GetComponent<Road>().roadType == Road.RoadType.VOID &&
+                            !goVertical))
                         {
-                            if (roadObjects[y, x + 1].GetComponent<Road>().connections.Count > 2)
+                            if (roadObjects[y, x + 1].GetComponent<Road>().connections.Count > 2 ||
+                                (roadObjects[y, x + 1].GetComponent<Road>().roadType == Road.RoadType.VOID &&
+                                !goVertical))
                             {
                                 if (y == 0)
                                 {
-                                    if (roadObjects[y + 1, x].GetComponent<Road>().connections.Count > 2)
+                                    if (roadObjects[y + 1, x].GetComponent<Road>().connections.Count > 2 ||
+                                        (roadObjects[y + 1, x].GetComponent<Road>().roadType == Road.RoadType.VOID &&
+                                        goVertical))
                                     {
                                         roadObjects[y + 1, x].GetComponent<Road>().connections.Remove(Plot.Direction.SOUTH);
                                         roadObjects[y, x].GetComponent<Road>().ResetRoad();
@@ -393,7 +382,9 @@ public class ProceduralScript : MonoBehaviour
                                 }
                                 else if (y == maxY - 1)
                                 {
-                                    if (roadObjects[y - 1, x].GetComponent<Road>().connections.Count > 2)
+                                    if (roadObjects[y - 1, x].GetComponent<Road>().connections.Count > 2 ||
+                                        (roadObjects[y - 1, x].GetComponent<Road>().roadType == Road.RoadType.VOID &&
+                                        goVertical))
                                     {
                                         roadObjects[y - 1, x].GetComponent<Road>().connections.Remove(Plot.Direction.NORTH);
                                         roadObjects[y, x].GetComponent<Road>().ResetRoad();
@@ -413,13 +404,19 @@ public class ProceduralScript : MonoBehaviour
                 {
                     if (y > 0 && y < maxY - 1)
                     {
-                        if (roadObjects[y - 1, x].GetComponent<Road>().connections.Count > 2)
+                        if (roadObjects[y - 1, x].GetComponent<Road>().connections.Count > 2 ||
+                            (roadObjects[y - 1, x].GetComponent<Road>().roadType == Road.RoadType.VOID &&
+                            goVertical))
                         {
-                            if (roadObjects[y + 1, x].GetComponent<Road>().connections.Count > 2)
+                            if (roadObjects[y + 1, x].GetComponent<Road>().connections.Count > 2 ||
+                                (roadObjects[y + 1, x].GetComponent<Road>().roadType == Road.RoadType.VOID &&
+                                goVertical))
                             {
                                 if (x == 0)
                                 {
-                                    if (roadObjects[y, x + 1].GetComponent<Road>().connections.Count > 2)
+                                    if (roadObjects[y, x + 1].GetComponent<Road>().connections.Count > 2 ||
+                                        (roadObjects[y, x + 1].GetComponent<Road>().roadType == Road.RoadType.VOID &&
+                                        !goVertical))
                                     {
                                         roadObjects[y, x + 1].GetComponent<Road>().connections.Remove(Plot.Direction.WEST);
                                         roadObjects[y, x].GetComponent<Road>().ResetRoad();
@@ -428,7 +425,9 @@ public class ProceduralScript : MonoBehaviour
                                 }
                                 else if (x == maxX - 1)
                                 {
-                                    if (roadObjects[y, x - 1].GetComponent<Road>().connections.Count > 2)
+                                    if (roadObjects[y, x - 1].GetComponent<Road>().connections.Count > 2 ||
+                                        (roadObjects[y, x - 1].GetComponent<Road>().roadType == Road.RoadType.VOID &&
+                                        !goVertical))
                                     {
                                         roadObjects[y, x - 1].GetComponent<Road>().connections.Remove(Plot.Direction.EAST);
                                         roadObjects[y, x].GetComponent<Road>().ResetRoad();
@@ -446,22 +445,17 @@ public class ProceduralScript : MonoBehaviour
                     }
                 }
             }
-            else
-                Debug.Log("                                             HIT THE SAME ONE");
             
-            //failsafe in case its not possible to delete more roads efficiently (5 fails in a row create a failure)
-            if (!resetted)
-            { 
-                consecutiveFails++; 
-                if(consecutiveFails == 20)
-                {
-                    Debug.Log("HIT 20 FAILS");
-                }
-            }
-            else
+            if (resetted)
             {
-                toDeleteCount++;
-                consecutiveFails = 0;
+                calc++;
+                toDeleteCount--;
+                directionCounter--;
+                if (directionCounter < 0)
+                {
+                    directionCounter = maxDirectionCounter;
+                    goVertical = !goVertical;
+                }
             }
         }
 
@@ -554,7 +548,6 @@ public class ProceduralScript : MonoBehaviour
 
     public IEnumerator CreateBuildings()
     {
-        Debug.Log("land plot count " + landPlots.Count);
         for (int i = 0; i < landPlots.Count; i++)
         {
             if (!landPlots[i].GetComponent<Plot>().occupied)
@@ -597,7 +590,6 @@ public class ProceduralScript : MonoBehaviour
                     }
                     else if (hit.collider.CompareTag("Land"))
                     {
-                        //issue here?
                         if (Random.value >= extraFillerRatio)
                         {
                             landPlots[i].GetComponent<Plot>().CreateBuilding(Building1x1, hit.point, rot, true);
@@ -609,7 +601,6 @@ public class ProceduralScript : MonoBehaviour
                 {
                     if (hit.collider.CompareTag("Road"))
                     {
-                        //Debug.Log(i + "collided:  DOWN   " + hit.collider.name + " tag:" + hit.collider.tag);
                         lookAt = hit.point;
                         foundRoad = true;
                     }
@@ -622,7 +613,6 @@ public class ProceduralScript : MonoBehaviour
                     }
                 }
                 ray = new Ray(new Vector3(temp.x, temp.y + 100, temp.z + length), Vector3.down);
-                Debug.DrawRay(new Vector3(temp.x, temp.y + 100, temp.z + length), Vector3.down * 100, Color.magenta, 1000f);
                 if (Physics.Raycast(ray, out hit, 1000))
                 {
                     if (hit.collider.CompareTag("Road"))
